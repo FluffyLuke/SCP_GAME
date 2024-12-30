@@ -20,7 +20,7 @@ ButtonState :: enum {
 
 Button :: struct {
     text: cstring,
-    clickarea: ClickArea,
+    click_area: ^ClickArea,
 
     rec: rl.Rectangle,
     state: ButtonState,
@@ -31,17 +31,22 @@ Button :: struct {
     b_clicked: ButtonStyle,
 }
 
-NewButton :: proc(text: cstring, rec: rl.Rectangle) -> ^Widget {
+NewButton :: proc(text: cstring, rec: rl.Rectangle, message: cstring) -> (^Widget, ^ClickArea) {
+    area: ^ClickArea = new(ClickArea)
+    area.rec = rec
+    area.message = message
+    area.state = ClickAreaDisabled {}
+    
     button := Button {
         text = text,
-        clickarea = NewClickArea(rec, false, nil, Nothing),
+        click_area = area,
         rec = rec,
         state = .BUTTON_DISABLED
     }
     new_button := new(Widget)
     new_button^ = button
 
-    return new_button;
+    return new_button, area;
 }
 
 ButtonSetText :: proc(button: ^Button, text: cstring) {
@@ -61,40 +66,24 @@ ButtonStylizeText :: proc(
     button.b_clicked = b_clicked
 }
 
-ButtonSetAction :: proc(button: ^Button, action: proc(^GameContext, rawptr), data: rawptr) {
-    if action == nil {
-        button.clickarea.enabled = false
-        button.clickarea.action = Nothing
-        button.state = .BUTTON_NORMAL
-        return
-    }
-
-    button.clickarea.enabled = true
-    button.clickarea.data = data
-    button.clickarea.action = action
-}
-
 CheckButtonState :: proc(game_ctx: ^GameContext, button: ^Button) {
     pos := rl.GetMousePosition()
     clicked := rl.IsMouseButtonReleased(.LEFT)
     hold := rl.IsMouseButtonDown(.LEFT)
 
-    if !button.clickarea.enabled {
-        button.state = .BUTTON_DISABLED
-        return
+    #partial switch v in button.click_area.state {
+        case ClickAreaDisabled: {
+            button.state = .BUTTON_DISABLED
+            return
+        }
     }
 
-    if !rl.CheckCollisionPointRec(pos, button.clickarea.rec) {
+    if !rl.CheckCollisionPointRec(pos, button.click_area.rec) {
         button.state = .BUTTON_NORMAL
         return
     }
 
-    button.state = .BUTTON_HOVER
-
-    if clicked {
-        button.clickarea.action(game_ctx, button.clickarea.data)
-        return
-    }
+    button.state = .BUTTON_HOVER;
 
     if hold {
         button.state = .BUTTON_CLICKED

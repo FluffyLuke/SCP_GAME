@@ -1,142 +1,115 @@
 package game
 
-import rl "vendor:raylib"
 import "core:mem"
-import "core:fmt"
+import "core:encoding/json"
+import "core:log"
+import str "core:strings"
 
+import rl "vendor:raylib"
+
+// General data about game
 GameContext :: struct {
+    debug: bool, // whether the game is in debug mode or not
     font: rl.Font,
+    player: EntityInstance(Player),
+
+    camera: struct {
+        using cam: rl.Camera2D,
+        speed: f32,
+        target_ref: ^Point2,
+    },
+    tilesets: map[Tilesets]^rl.Texture2D,
+
+    change_level_info: ChangeLevelInfo,
+
+    // --- Read using parser ---
+    default_tile_width: i32,
+    default_tile_height: i32,
+
     levels: [dynamic]^Level,
     current_level: ^Level,
+
+    player_starting_pos: Point2,
 }
 
-Vector2 :: rl.Vector2
-
-ClickArea :: struct {
-    rec: rl.Rectangle,
-    enabled: bool,
-    data: rawptr,
-    action: proc(game_ctx: ^GameContext, data: rawptr)
+Item :: struct {
+    id: string,
+    destroyed: bool,
+    default_animation: AnimatedTexture,
+    data: any,
 }
 
-NewClickArea :: proc(
-    rec: rl.Rectangle,
-    enabled: bool,
-    data: rawptr,
-    action: proc(game_ctx: ^GameContext, data:  rawptr)
-) -> ClickArea {
-    return {
-        rec = rec,
-        enabled = enabled,
-        data = data,
-        action = action,
-    }
-}
+ItemPositionCollected :: Point2 { -500, -500 }
+ItemEmptyCollider :: Rectangle {0, 0, 0, 0}
 
-Collider :: struct {
-    rec: rl.Rectangle,
-    enabled: bool,
-}
+ItemParseData :: struct {
+    default_texture_path: string,
+    frames: i32,
+    speed: f32,
+    repeat: bool,
 
-NewCollider :: proc(rec: rl.Rectangle, enabled: bool) -> Collider {
-    return {
-        rec = rec,
-        enabled = enabled,
-    }
-}
+    source_dimensions: Vector2,
+    render_dimensions: Vector2,
+} 
 
-Drawable  :: struct {
-    pos: Vector2,
-    rotation: f32,
-    texture: rl.Texture2D,
-    text_source: rl.Rectangle, // Part of texture
-    text_dest: rl.Rectangle // Size of this part
-}
-
-LevelState :: enum {
-    Uninitialized,
-    Initialized,
-    ShouldClose,
-}
-
-Level :: struct {
-    state: LevelState,
-
-    init: proc(ctx: ^GameContext, level: ^Level),
-    run_logic: proc(ctx: ^GameContext, level: ^Level),
-    deinit: proc(ctx: ^GameContext, level: ^Level),
-
-    data: rawptr,
-    clickables: [dynamic]^Collider,
-    collaidables: [dynamic]^Collider,
-    drawables: [dynamic]^Drawable,
-    widgets: [dynamic]^Widget,
-}
-
-EventState :: enum {
-    EventInit,
-    EventRun,
-}
-
-Event :: struct {
-    state: EventState,
-    data: rawptr,
-    event: proc(game_ctx: ^GameContext, data: rawptr) -> bool,
-}
-
-CloseLevel :: proc(ctx: ^GameContext, data: rawptr) {
-    level := cast(^Level)data
-    level.state = .ShouldClose
-    ctx.current_level = nil
-}
-
-RenderLevel :: proc(ctx: ^GameContext, level: ^Level) {
-    // Render objects
-
-    r: rl.Rectangle
-    // Render widgets
-    for &widget in level.widgets {
-        switch &s in widget {
-            case Label: {
-                rl.DrawText(s.text, i32(s.pos[0]), i32(s.pos[1]), s.text_size, s.text_color)
-            }
-            case Button: {
-                CheckButtonState(ctx, &s)
-                RenderButton(ctx, &s)
-            }
-        }
-    }
-}
-
-RenderButton :: proc(ctx: ^GameContext, button: ^Button) {
-    font_spacing :: 5
-    text_color: rl.Color
-    text_size: f32
-
-    switch button.state {
-        case .BUTTON_DISABLED: {
-            text_color = button.b_disabled.text_color
-            text_size = button.b_disabled.text_size
-        }
-        case .BUTTON_NORMAL: {
-            text_color = button.b_normal.text_color
-            text_size = button.b_normal.text_size
-        }
-        case .BUTTON_HOVER: {
-            text_color = button.b_hover.text_color
-            text_size = button.b_hover.text_size
-        }
-        case .BUTTON_CLICKED: {
-            text_color = button.b_clicked.text_color
-            text_size = button.b_clicked.text_size
-        }
+ParseRawItem :: proc(g_ctx: ^GameContext, p: ^EntityRaw) -> EntityInstance(Item) {
+    
+    item_data := map[string]ItemParseData {
+        FuzeItemName = FuzeItemTexturePath,
     }
 
-    rl.DrawRectangleV({button.rec.x, button.rec.y}, {button.rec.width, button.rec.height}, rl.GRAY)
-    offset := rl.MeasureTextEx(ctx.font, button.text, text_size, font_spacing)
+    id := p.fieldInstances[0].(json.Object)["__value"].(json.String)
+    data, ok := item_data[id]
+    if !ok {
+        log.error("Cannot find texture for item of id: ", id, "!")
+    }
 
-    offsex_x := button.rec.x+(button.rec.width/2)-(offset.x/2)
-    offsex_y := button.rec.y+(button.rec.height/2)-(offset.y/2)
+    texture_path_c := str.clone_to_cstring(data.default_texture_path, context.temp_allocator)
+    pos := RetartedVectorToPoint(p.px)
+    item := new(Entity)
+    item^ = Entity {
+        pos = pos,
+        visible = true,
+        collider = GetCollider(p),
+        update = UpdateEmpty,
+        render = RenderEntityDefault,
+        render_ui = RenderUIEmpty,
+        variant = Item {
+            id = str.clone(id),
+            default_animation = NewAnimatedTexture(
+                g_ctx,
+                texture_path_c,
+                data.source_dimensions,
+                data.render_dimensions,
+                data.frames,
+                data.speed,
+                data.repeat,
+            ),
+        }
+    }
+    item_instance := GetEntityInstance(item, &item.variant.(Item))
+    item_instance.current_animation = &item_instance.default_animation
 
-    rl.DrawTextEx(ctx.font, button.text, {offsex_x, offsex_y}, text_size, font_spacing, text_color)
+    return item_instance
 }
+
+Tilesets :: enum {
+    RoomTileset
+}
+
+GetTilesets :: proc(g_ctx: ^GameContext) {
+
+    room_tileset_path: cstring = "./assets/tilesets/room.png"
+
+    door_tileset := new(rl.Texture2D)
+    door_tileset^ = rl.LoadTexture(room_tileset_path)
+    g_ctx.tilesets = {
+        .RoomTileset = door_tileset
+    }
+
+    free_all(context.allocator)
+}
+
+GetCameraTarget :: proc(g_ctx: ^GameContext) -> Vector2 {
+    return g_ctx.camera.target
+} 
