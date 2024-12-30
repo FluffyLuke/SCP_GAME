@@ -89,6 +89,7 @@ main :: proc() {
         // Render everything
         rl.BeginMode2D(g_ctx.camera)
         Render(&g_ctx)
+        RenderDialogs(&g_ctx)
         rl.EndMode2D()
 
         RednerUI(&g_ctx)
@@ -101,8 +102,6 @@ main :: proc() {
 MoveCamera :: proc(g_ctx: ^GameContext) {
     camera := &g_ctx.camera
     new_target := PointToRetardedVector(camera.target_ref^)
-    // log.warn("Target:", camera.target)
-    // log.warn("Target ref:", camera.target_ref)
 
     logic: if camera.speed == 0 {
         camera.target = new_target

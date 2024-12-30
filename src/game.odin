@@ -27,6 +27,7 @@ GameContext :: struct {
     default_tile_height: i32,
 
     levels: [dynamic]^Level,
+    dialogs: [dynamic]Dialog,
     current_level: ^Level,
 
     player_starting_pos: Point2,
