@@ -40,7 +40,8 @@ MoveCameraEvent :: struct {
 
 AddMoveCameraStateEvent :: proc(event: ^Event, speed: f32, target: ^Point2) {
     append(&event.elements, MoveCameraEvent {speed, target})
-} 
+}
+
 RunMoveCameraEvent :: proc(g_ctx: ^GameContext, event: ^MoveCameraEvent) -> EventElementFinishedSignal {
     camera := &g_ctx.camera
     camera.speed = event.speed

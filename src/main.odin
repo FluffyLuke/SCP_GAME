@@ -63,7 +63,6 @@ main :: proc() {
     defer free(g_ctx.player.entity)
 
     logic: for !rl.WindowShouldClose() {
-        log.debug("new tick")
         // Set debug mode
         if rl.IsKeyDown(.F7) {
             g_ctx.debug = true
