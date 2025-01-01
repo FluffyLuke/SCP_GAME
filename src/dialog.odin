@@ -57,7 +57,22 @@ AddDialogNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, spee
     append(&g_ctx.dialogs, dialog)
 }
 
-AddDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) -> ^DialogHandle {
+GetDialogNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) -> Dialog {
+    dialog := Dialog {
+        entity = entity,
+        text = text,
+        speed = speed,
+        delta = 0,
+        type = DialogNormal {
+            time_to_wait,
+            0,
+        }
+    }
+
+    return dialog
+}
+
+AddDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> ^DialogHandle {
     handle := new(DialogHandle)
     handle^ = DialogHandle {
         finished = false
@@ -74,6 +89,24 @@ AddDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed:
 
     append(&g_ctx.dialogs, dialog)
     return handle
+}
+
+GetDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> (Dialog, ^DialogHandle) {
+    handle := new(DialogHandle)
+    handle^ = DialogHandle {
+        finished = false
+    }
+
+    dialog := Dialog {
+        entity = entity,
+        text = text,
+        speed = speed,
+        type = DialogWait {
+            handle = handle
+        }
+    }
+
+    return dialog, handle
 }
 
 RenderDialogs :: proc(g_ctx: ^GameContext) {

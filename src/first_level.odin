@@ -12,10 +12,11 @@ StartState :: proc(g_ctx: ^GameContext, level: ^Level) {
     SpawnPlayer(g_ctx, g_ctx.player_starting_pos)
 
     event := Event {{}}
-    // AddSetPlayerStateEvent(&event, PlayerDisabledState {})
-    // AddMoveCameraStateEvent(&event, 0, &CameraStartingLocation)
-    AddMoveCameraStateEvent(&event, 0, &g_ctx.player.pos)
-    // AddSetPlayerStateEvent(&event, PlayerStandingState {})
+    AddSetPlayerStateEvent(&event, PlayerDisabledState {})
+    AddMoveCameraStateEvent(&event, &CameraStartingLocation, 0, true)
+    AddMoveCameraStateEvent(&event, &g_ctx.player.pos, 5, true)
+    AddMoveCameraStateEvent(&event, &g_ctx.player.pos, 0, true)
+    AddSetPlayerStateEvent(&event, PlayerStandingState {})
     append(&level.events, event)
     RunEventsDefault(g_ctx, &level.events)
 

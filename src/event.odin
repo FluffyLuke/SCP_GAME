@@ -13,6 +13,8 @@ Event :: struct {
 EventElement :: union {
     SetPlayerStateEvent,
     MoveCameraEvent,
+    WaitEvent,
+    DialogEvent,
 }
 
 EventElementFinishedSignal :: enum {
@@ -24,6 +26,7 @@ EventElementFinishedSignal :: enum {
 SetPlayerStateEvent :: struct { 
     state: PlayerState
 }
+
 AddSetPlayerStateEvent :: proc(event: ^Event, state: PlayerState) {
     append(&event.elements, SetPlayerStateEvent {state})
 }
@@ -36,19 +39,21 @@ RunSetPlayerStateEvent :: proc(g_ctx: ^GameContext, event: ^SetPlayerStateEvent)
 MoveCameraEvent :: struct {
     speed: f32,
     target: ^Point2,
+    should_wait: bool, // Whether event should wait for camera to center on the target
 }
 
-AddMoveCameraStateEvent :: proc(event: ^Event, speed: f32, target: ^Point2) {
-    append(&event.elements, MoveCameraEvent {speed, target})
+AddMoveCameraStateEvent :: proc(event: ^Event, target: ^Point2, speed: f32, wait: bool) {
+    append(&event.elements, MoveCameraEvent {speed, target, wait})
 }
 
 RunMoveCameraEvent :: proc(g_ctx: ^GameContext, event: ^MoveCameraEvent) -> EventElementFinishedSignal {
     camera := &g_ctx.camera
     camera.speed = event.speed
     camera.target_ref = event.target
-    log.debug("Target:",event.target)
+
+    if !event.should_wait do return .FinishedAndSkip
+
     if Vector2(event.target^) == camera.target {
-        log.error("FINISHEd")
         return .Finished
     }
     return .NotFinished
@@ -66,6 +71,62 @@ RunEventsDefault :: proc(g_ctx: ^GameContext, events: ^[dynamic]Event) {
     }
 }
 
+WaitEvent :: struct {
+    time: f32,
+    delta: f32,
+}
+
+AddWaitEvent :: proc(event: ^Event, time: f32) {
+    append(&event.elements, WaitEvent {time, 0})
+}
+
+RunWaitEvent :: proc(g_ctx: ^GameContext, event: ^WaitEvent) -> EventElementFinishedSignal {
+    event.delta += rl.GetFrameTime();
+    if event.delta >= event.time do return .Finished
+    return .NotFinished
+}
+
+DialogEventState :: enum {
+    AddingDialog,
+    Logic,
+}
+DialogEvent :: struct {
+    state: DialogEventState,
+    dialog: Dialog,
+    handle: ^DialogHandle // Can be nil!
+}
+
+AddDialogEvent :: proc(event: ^Event, dialog: Dialog, handle: ^DialogHandle = nil) {
+    append(&event.elements, DialogEvent { .AddingDialog, dialog, handle })
+}
+
+RunDialogEvent :: proc(g_ctx: ^GameContext, event: ^DialogEvent) -> EventElementFinishedSignal {
+    switch &s in event.dialog.type {
+        case DialogNormal: {
+            append(&g_ctx.dialogs, event.dialog)
+            event.state = .Logic // Not used
+            return .FinishedAndSkip
+        }
+        case DialogWait: {
+            switch event.state {
+                case .AddingDialog: {
+                    append(&g_ctx.dialogs, event.dialog)
+                    fallthrough
+                }
+                case .Logic: {
+                    if rl.IsKeyPressed(.E) {
+                        event.handle.finished = true;
+                        return .Finished
+                    }
+                    return .NotFinished
+                }
+            }
+        }
+    }
+    log.error("This point should never be reached!")
+    return .Finished
+}
+
 // This is used to run a single event
 RunEventLogic :: proc(g_ctx: ^GameContext, event: ^Event) -> bool {
     // For loop is necessary, since some elements execute instantly
@@ -80,6 +141,8 @@ RunEventLogic :: proc(g_ctx: ^GameContext, event: ^Event) -> bool {
         switch &s in event_element {
             case SetPlayerStateEvent: status = RunSetPlayerStateEvent(g_ctx, &s)
             case MoveCameraEvent: status = RunMoveCameraEvent(g_ctx, &s)
+            case WaitEvent: status = RunWaitEvent(g_ctx, &s)
+            case DialogEvent: status = RunDialogEvent(g_ctx, &s)
         }
 
         switch status {
