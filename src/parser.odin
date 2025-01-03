@@ -30,6 +30,7 @@ LevelJSON :: struct
             __type: string,
 
             autoLayerTiles: []AutoLayerTile,
+            gridTiles: []AutoLayerTile,
 
             // For entites
             entityInstances: []EntityRaw
@@ -75,8 +76,15 @@ ProcessLevels :: proc(g_ctx: ^GameContext, levelJSON: ^LevelJSON) {
         }
         for &layer in level_raw.layerInstances {
             switch layer.__identifier {
+                case "Tiles": {
+                    log.error("PARSING TILES!")
+                    for &t in layer.gridTiles {
+                        log.error(t)
+                    }
+                    ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Decorations)
+                }
                 case "Room": {
-                    ParseTiles(g_ctx, level, &layer.autoLayerTiles, g_ctx.tilesets[.RoomTileset])
+                    ParseTiles(g_ctx, level, &layer.autoLayerTiles, g_ctx.tilesets[.RoomTileset], .Background)
                 }
                 case "Entities": {
                     ParseEntities(g_ctx, level, layer.entityInstances)
@@ -135,13 +143,25 @@ ParseEntities :: proc(g_ctx: ^GameContext, level: ^Level, entities: []EntityRaw)
     }
 }
 
-
-GetColliderRetarded :: proc(e: ^EntityRaw) -> Rectangle {
-    return {e.px.x, e.px.y, f32(e.width), f32(e.height)}
+CreateCollider :: proc(rec: Rectangle) -> Collider {
+    return {
+        rec = rec,
+        disabled = false,
+    }
 }
 
-GetCollider:: proc(e: ^EntityRaw) -> Rectangle {
-    return {e.px.x - f32(e.width/2), e.px.y - f32(e.height/2), f32(e.width), f32(e.height)}
+GetColliderRetarded :: proc(e: ^EntityRaw) -> Collider {
+    return {
+        rec = {e.px.x, e.px.y, f32(e.width), f32(e.height)},
+        disabled = false,
+    }
+}
+
+GetCollider:: proc(e: ^EntityRaw) -> Collider {
+    return {
+        rec = {e.px.x - f32(e.width/2), e.px.y - f32(e.height/2), f32(e.width), f32(e.height)},
+        disabled = false,
+    }
 }
 
 GetPoint :: proc(e: ^EntityRaw) -> Point2 {

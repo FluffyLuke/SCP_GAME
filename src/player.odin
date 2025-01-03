@@ -19,7 +19,7 @@ PlayerState :: union {
 Player :: struct {
     state: PlayerState,
 
-    range: f32,
+    grab_collider: Collider,
 
     selected_entity: i32,
     entities_in_range: [dynamic]^Entity,
@@ -40,25 +40,27 @@ PreparePlayer :: proc(g_ctx: ^GameContext) {
     p^ = Entity {
         pos = {0, 0},
         visible = true,
-        collider = {0, 0, 16, 32},
+        collider = CreateCollider({40, 160, 16, 32}),
         variant = Player {
             entities_in_range = {},
-            range = 30,
+            grab_collider = CreateCollider({0,0,60, 60}),
             standing = NewAnimatedTexture(
                 g_ctx, 
-                "./assets/player/placeholders/player_standing.png",
+                "./assets/player/player.png",
+                {32*3,64},
                 {16,32},
-                {16,32},
-                1,
-                1,
+                {0,0},
+                3,
+                3,
             ),
             walking = NewAnimatedTexture(
                 g_ctx, 
-                "./assets/player/placeholders/player_standing.png",
+                "./assets/player/player.png",
+                {32*3,64},
                 {16,32},
-                {16,32},
-                1,
-                1,
+                {0,64},
+                3,
+                6,
             ),
         }
     }
@@ -96,7 +98,7 @@ RunPlayerLogic :: proc(g_ctx: ^GameContext, player: EntityInstance(Player)) {
 
     for e in g_ctx.current_level.entities {
         if _, ok := e.variant.(Player); !ok {
-            if Point2Distance(e.pos, player.pos) < player.range {
+            if CheckCollision(player.grab_collider, e.collider) {
                 append(&player.entities_in_range, e)
             }
         }
@@ -110,11 +112,11 @@ RunPlayerLogic :: proc(g_ctx: ^GameContext, player: EntityInstance(Player)) {
     switch s in player.state {
         case PlayerDisabledState: {}
         case PlayerStandingState: {
-            //ChangePlayerAnimation(player, &player.standing)
+            ChangePlayerAnimation(player, &player.standing)
         }
         case PlayerWalkingState: {
-            player.current_animation.flip = s.flip
             ChangePlayerAnimation(player, &player.walking)
+            player.current_animation.flip = s.flip
             move := Point2 {1, 0} * s.speed * delta
             if s.flip {
                 move *= -1
@@ -241,9 +243,7 @@ ParsePlayerInput :: proc(g_ctx: ^GameContext, player: EntityInstance(Player)) {
             case Item: {
                 for slot, i in player.inventory {
                     if slot.occupied do continue
-                    selected_entity.collider = ItemEmptyCollider
-                    selected_entity.pos = ItemPositionCollected
-                    selected_entity.visible = false
+                    DisableEntity(selected_entity)
                     player.inventory[i] = {
                         true,
                         false,
@@ -261,12 +261,12 @@ ParsePlayerInput :: proc(g_ctx: ^GameContext, player: EntityInstance(Player)) {
 
 MovePlayer :: proc(g_ctx: ^GameContext, player: EntityInstance(Player), add_pos: Point2) {
     player.pos += add_pos
-    vec := PointToVector(player.pos, { player.collider.width, player.collider.height } )
-    player.collider = { vec.x, vec.y, player.collider.width, player.collider.height }
+    CenterCollider(&player.collider, player.pos)
+    CenterCollider(&player.grab_collider, player.pos)
 
 
-    for w in g_ctx.current_level.walls {
-        if !rl.CheckCollisionRecs(player.collider, w.collider) { continue }
+    for &w in g_ctx.current_level.walls {
+        if !CheckCollision(player.collider, w.collider) { continue }
         // Is on the right side of the wall
         if player.x > w.collider.x {
             player.pos.x = w.collider.x + w.collider.width + player.collider.width/2
@@ -276,15 +276,15 @@ MovePlayer :: proc(g_ctx: ^GameContext, player: EntityInstance(Player), add_pos:
             player.pos.x = w.collider.x - player.collider.width/2
         }
         // Move back the collider
-        vec = PointToVector(player.pos, { player.collider.width, player.collider.height } )
-        player.collider = { vec.x, vec.y, player.collider.width, player.collider.height }
+        CenterCollider(&player.collider, player.pos)
+        CenterCollider(&player.grab_collider, player.pos)
     }
 }
 
 TeleportPlayer :: proc(g_ctx: ^GameContext, player: EntityInstance(Player), pos: Point2) {
     player.pos = pos
-    vec := PointToVector(player.pos, { player.collider.width, player.collider.height } )
-    player.collider = { vec.x, vec.y, player.collider.width, player.collider.height }
+    CenterCollider(&player.collider, player.pos)
+    CenterCollider(&player.grab_collider, player.pos)
 }
 
 

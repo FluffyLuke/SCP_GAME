@@ -15,6 +15,7 @@ StartState :: proc(g_ctx: ^GameContext, level: ^Level) {
     AddSetPlayerStateEvent(&event, PlayerDisabledState {})
     AddMoveCameraStateEvent(&event, &CameraStartingLocation, 0, true)
     AddMoveCameraStateEvent(&event, &g_ctx.player.pos, 5, true)
+    AddDialogueEvent(&event, GetDialogueNormal(g_ctx, g_ctx.player, "Dialogue system :)", 10, 2))
     AddMoveCameraStateEvent(&event, &g_ctx.player.pos, 0, true)
     AddSetPlayerStateEvent(&event, PlayerStandingState {})
     append(&level.events, event)

@@ -88,7 +88,7 @@ main :: proc() {
         // Render everything
         rl.BeginMode2D(g_ctx.camera)
         Render(&g_ctx)
-        RenderDialogs(&g_ctx)
+        RenderDialogues(&g_ctx)
         rl.EndMode2D()
 
         RednerUI(&g_ctx)
@@ -143,8 +143,10 @@ MoveCamera :: proc(g_ctx: ^GameContext) {
 }
 
 Render :: proc(g_ctx: ^GameContext) {
-    for t in g_ctx.current_level.tiles {
-        rl.DrawTexturePro(t.texture^, t.src, t.dest, 0, 0, rl.WHITE)
+    for set in g_ctx.current_level.tiles {
+        for &t in set {
+            rl.DrawTexturePro(t.texture^, t.src, t.dest, 0, 0, rl.WHITE)
+        }
     }
 
     for e in g_ctx.current_level.entities {
@@ -162,7 +164,9 @@ Render :: proc(g_ctx: ^GameContext) {
         rl.DrawRectanglePro(g_ctx.player.collider, 0, 0, {255, 0, 0, 100})
         rl.DrawCircleV(PointToRetardedVector(g_ctx.player.pos), 2, {0, 255, 0, 255})
         for e in g_ctx.current_level.entities {
-            rl.DrawRectanglePro(e.collider, 0, 0, {255, 0, 0, 100})
+            if !e.collider.disabled {
+                rl.DrawRectanglePro(e.collider, 0, 0, {255, 0, 0, 100})
+            }
             rl.DrawCircleV(PointToRetardedVector(e.pos), 2, {0, 255, 0, 255})
         }
         for w in g_ctx.current_level.walls {

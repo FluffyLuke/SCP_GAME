@@ -7,28 +7,28 @@ import "core:log"
 import rl "vendor:raylib"
 
 
-DialogHandle :: struct {
+DialogueHandle :: struct {
     finished: bool
 }
 
-DestroyDialogHandle :: proc(d: ^DialogHandle) {
+DestroyDialogueHandle :: proc(d: ^DialogueHandle) {
     free(d)
 }
 
-DialogNormal :: struct {
-    // Time to wait after dialog is over
+DialogueNormal :: struct {
+    // Time to wait after dialogue is over
     // before erasing the text
     time_to_wait: f32,
     delta: f32,
 }
 
-DialogWait :: struct {
-    // This handle is used to check whether dialog has ended
-    // Handle is used, because reference to dialog can become invalid
-    handle: ^DialogHandle,
+DialogueWait :: struct {
+    // This handle is used to check whether dialogue has ended
+    // Handle is used, because reference to dialogue can become invalid
+    handle: ^DialogueHandle,
 }
 
-Dialog :: struct {
+Dialogue :: struct {
     entity: ^Entity,
     text: string,
     speed: f32, // How many characters should be shown every second
@@ -37,144 +37,144 @@ Dialog :: struct {
     delta: f32, // Time this text has already been shown
 
     type: union {
-        DialogNormal,
-        DialogWait,
+        DialogueNormal,
+        DialogueWait,
     },
 }
 
-AddDialogNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) {
-    dialog := Dialog {
+AddDialogueNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) {
+    dialogue := Dialogue {
         entity = entity,
         text = text,
         speed = speed,
         delta = 0,
-        type = DialogNormal {
+        type = DialogueNormal {
             time_to_wait,
             0,
         }
     }
 
-    append(&g_ctx.dialogs, dialog)
+    append(&g_ctx.dialogues, dialogue)
 }
 
-GetDialogNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) -> Dialog {
-    dialog := Dialog {
+GetDialogueNormal :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32, time_to_wait: f32) -> Dialogue {
+    dialogue := Dialogue {
         entity = entity,
         text = text,
         speed = speed,
         delta = 0,
-        type = DialogNormal {
+        type = DialogueNormal {
             time_to_wait,
             0,
         }
     }
 
-    return dialog
+    return dialogue
 }
 
-AddDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> ^DialogHandle {
-    handle := new(DialogHandle)
-    handle^ = DialogHandle {
+AddDialogueWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> ^DialogueHandle {
+    handle := new(DialogueHandle)
+    handle^ = DialogueHandle {
         finished = false
     }
 
-    dialog := Dialog {
+    dialogue := Dialogue {
         entity = entity,
         text = text,
         speed = speed,
-        type = DialogWait {
+        type = DialogueWait {
             handle = handle
         }
     }
 
-    append(&g_ctx.dialogs, dialog)
+    append(&g_ctx.dialogues, dialogue)
     return handle
 }
 
-GetDialogWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> (Dialog, ^DialogHandle) {
-    handle := new(DialogHandle)
-    handle^ = DialogHandle {
+GetDialogueWait :: proc(g_ctx: ^GameContext, entity: ^Entity, text: string, speed: f32) -> (Dialogue, ^DialogueHandle) {
+    handle := new(DialogueHandle)
+    handle^ = DialogueHandle {
         finished = false
     }
 
-    dialog := Dialog {
+    dialogue := Dialogue {
         entity = entity,
         text = text,
         speed = speed,
-        type = DialogWait {
+        type = DialogueWait {
             handle = handle
         }
     }
 
-    return dialog, handle
+    return dialogue, handle
 }
 
-RenderDialogs :: proc(g_ctx: ^GameContext) {
-    for &d, i in g_ctx.dialogs {
+RenderDialogues :: proc(g_ctx: ^GameContext) {
+    for &d, i in g_ctx.dialogues {
         d.delta += rl.GetFrameTime()
         switch &s in d.type {
-            case DialogNormal: {
+            case DialogueNormal: {
                 if d.fully_displayed do s.delta += rl.GetFrameTime()
 
-                if s.delta > s.time_to_wait do ordered_remove(&g_ctx.dialogs, i)
-                else do DrawDialog(g_ctx, &d)
+                if s.delta > s.time_to_wait do ordered_remove(&g_ctx.dialogues, i)
+                else do DrawDialogue(g_ctx, &d)
             }
-            case DialogWait: {
-                if s.handle.finished do ordered_remove(&g_ctx.dialogs, i)
-                else do DrawDialog(g_ctx, &d)
+            case DialogueWait: {
+                if s.handle.finished do ordered_remove(&g_ctx.dialogues, i)
+                else do DrawDialogue(g_ctx, &d)
             }
         }
     }
 }
 
 @(private="file") CharactersInLine :: 30
-@(private="file") DialogSize :: 5
-@(private="file") DialogSpacing :: 1
+@(private="file") DialogueSize :: 5
+@(private="file") DialogueSpacing :: 1
 
-@(private="file") DialogBoxPadding :: 12
-@(private="file") DialogBoxPaddingRight :: 4
+@(private="file") DialogueBoxPadding :: 12
+@(private="file") DialogueBoxPaddingRight :: 4
 
-SlowDialogSpeed :: 10
-DefaultDialogSpeed :: 20
-FastDialogSpeed :: 30
+SlowDialogueSpeed :: 10
+DefaultDialogueSpeed :: 20
+FastDialogueSpeed :: 30
 
-DefaultDialogWaitTime :: 2
+DefaultDialogueWaitTime :: 2
 
-DrawDialog :: proc(g_ctx: ^GameContext, dialog: ^Dialog) {
-    line_pos := Vector2(dialog.entity.pos)
+DrawDialogue :: proc(g_ctx: ^GameContext, dialogue: ^Dialogue) {
+    line_pos := Vector2(dialogue.entity.pos)
 
-    length := len(dialog.text) // Get total runes in text
-    runes_to_show := int(math.floor_f32(dialog.delta*dialog.speed)) // Get numbers of runes to show
+    length := len(dialogue.text) // Get total runes in text
+    runes_to_show := int(math.floor_f32(dialogue.delta*dialogue.speed)) // Get numbers of runes to show
 
-    log.error("Dialog delta:", dialog.delta)
-    log.error("Dialog speed:", dialog.speed)
-    log.error("Runes to show:", runes_to_show)
+    // log.error("Dialogue delta:", dialogue.delta)
+    // log.error("Dialogue speed:", dialogue.speed)
+    // log.error("Runes to show:", runes_to_show)
     
     //runes_to_show = length < runes_to_show ? length : runes_to_show
 
     if length < runes_to_show {
-        dialog.fully_displayed = true;
+        dialogue.fully_displayed = true;
         runes_to_show = length
     }
 
     lines := (runes_to_show / CharactersInLine) + 1
 
-    entity_height := dialog.entity.current_animation.render_dimensions.y
+    entity_height := dialogue.entity.current_animation.render_dimensions.y
 
     origin: Vector2
     // Draw box
     {
         first_line := runes_to_show < CharactersInLine ? \
-            str.clone_to_cstring(dialog.text[0:runes_to_show], context.temp_allocator) : 
-            str.clone_to_cstring(dialog.text[0:CharactersInLine], context.temp_allocator)
+            str.clone_to_cstring(dialogue.text[0:runes_to_show], context.temp_allocator) : 
+            str.clone_to_cstring(dialogue.text[0:CharactersInLine], context.temp_allocator)
             
-        text_dim := rl.MeasureTextEx(g_ctx.font, first_line, DialogSize, DialogSpacing)
+        text_dim := rl.MeasureTextEx(g_ctx.font, first_line, DialogueSize, DialogueSpacing)
         
         box := Rectangle {
             g_ctx.player.x,
             g_ctx.player.y,
-            text_dim.x + DialogBoxPadding + DialogBoxPaddingRight,
-            text_dim.y * f32(lines) + DialogBoxPadding,
+            text_dim.x + DialogueBoxPadding + DialogueBoxPaddingRight,
+            text_dim.y * f32(lines) + DialogueBoxPadding,
         }
 
         // origin box
@@ -186,7 +186,7 @@ DrawDialog :: proc(g_ctx: ^GameContext, dialog: ^Dialog) {
         rl.DrawRectanglePro(box, origin, 0, rl.GRAY)
     }
 
-    origin -= DialogBoxPadding/2
+    origin -= DialogueBoxPadding/2
 
     start: int = 0
     end: int = 0
@@ -195,10 +195,10 @@ DrawDialog :: proc(g_ctx: ^GameContext, dialog: ^Dialog) {
         start = i * CharactersInLine
         end = start + CharactersInLine
 
-        line := str.clone_to_cstring(dialog.text[start:end], context.temp_allocator)
-        text_dim := rl.MeasureTextEx(g_ctx.font, line, DialogSize, DialogSpacing)
+        line := str.clone_to_cstring(dialogue.text[start:end], context.temp_allocator)
+        text_dim := rl.MeasureTextEx(g_ctx.font, line, DialogueSize, DialogueSpacing)
         
-        rl.DrawTextPro(g_ctx.font, line, line_pos, origin, 0, DialogSize, DialogSpacing, rl.GREEN)
+        rl.DrawTextPro(g_ctx.font, line, line_pos, origin, 0, DialogueSize, DialogueSpacing, rl.GREEN)
     
         // Since there will be one line after the for loop, additional spacing must be added
         // even after the last line in for loop
@@ -209,9 +209,9 @@ DrawDialog :: proc(g_ctx: ^GameContext, dialog: ^Dialog) {
         start = end
         end = runes_to_show
 
-        line := str.clone_to_cstring(dialog.text[start:end], context.temp_allocator)
-        text_dim := rl.MeasureTextEx(g_ctx.font, line, DialogSize, DialogSpacing)
+        line := str.clone_to_cstring(dialogue.text[start:end], context.temp_allocator)
+        text_dim := rl.MeasureTextEx(g_ctx.font, line, DialogueSize, DialogueSpacing)
 
-        rl.DrawTextPro(g_ctx.font, line, line_pos, origin, 0, DialogSize, DialogSpacing, rl.GREEN)
+        rl.DrawTextPro(g_ctx.font, line, line_pos, origin, 0, DialogueSize, DialogueSpacing, rl.GREEN)
     }
 }

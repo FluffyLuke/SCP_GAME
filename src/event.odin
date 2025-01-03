@@ -14,7 +14,7 @@ EventElement :: union {
     SetPlayerStateEvent,
     MoveCameraEvent,
     WaitEvent,
-    DialogEvent,
+    DialogueEvent,
 }
 
 EventElementFinishedSignal :: enum {
@@ -86,31 +86,31 @@ RunWaitEvent :: proc(g_ctx: ^GameContext, event: ^WaitEvent) -> EventElementFini
     return .NotFinished
 }
 
-DialogEventState :: enum {
-    AddingDialog,
+DialogueEventState :: enum {
+    AddingDialogue,
     Logic,
 }
-DialogEvent :: struct {
-    state: DialogEventState,
-    dialog: Dialog,
-    handle: ^DialogHandle // Can be nil!
+DialogueEvent :: struct {
+    state: DialogueEventState,
+    dialogue: Dialogue,
+    handle: ^DialogueHandle // Can be nil!
 }
 
-AddDialogEvent :: proc(event: ^Event, dialog: Dialog, handle: ^DialogHandle = nil) {
-    append(&event.elements, DialogEvent { .AddingDialog, dialog, handle })
+AddDialogueEvent :: proc(event: ^Event, dialogue: Dialogue, handle: ^DialogueHandle = nil) {
+    append(&event.elements, DialogueEvent { .AddingDialogue, dialogue, handle })
 }
 
-RunDialogEvent :: proc(g_ctx: ^GameContext, event: ^DialogEvent) -> EventElementFinishedSignal {
-    switch &s in event.dialog.type {
-        case DialogNormal: {
-            append(&g_ctx.dialogs, event.dialog)
+RunDialogueEvent :: proc(g_ctx: ^GameContext, event: ^DialogueEvent) -> EventElementFinishedSignal {
+    switch &s in event.dialogue.type {
+        case DialogueNormal: {
+            append(&g_ctx.dialogues, event.dialogue)
             event.state = .Logic // Not used
             return .FinishedAndSkip
         }
-        case DialogWait: {
+        case DialogueWait: {
             switch event.state {
-                case .AddingDialog: {
-                    append(&g_ctx.dialogs, event.dialog)
+                case .AddingDialogue: {
+                    append(&g_ctx.dialogues, event.dialogue)
                     fallthrough
                 }
                 case .Logic: {
@@ -142,7 +142,7 @@ RunEventLogic :: proc(g_ctx: ^GameContext, event: ^Event) -> bool {
             case SetPlayerStateEvent: status = RunSetPlayerStateEvent(g_ctx, &s)
             case MoveCameraEvent: status = RunMoveCameraEvent(g_ctx, &s)
             case WaitEvent: status = RunWaitEvent(g_ctx, &s)
-            case DialogEvent: status = RunDialogEvent(g_ctx, &s)
+            case DialogueEvent: status = RunDialogueEvent(g_ctx, &s)
         }
 
         switch status {

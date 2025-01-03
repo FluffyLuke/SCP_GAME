@@ -4,7 +4,7 @@ import "core:log"
 import rl "vendor:raylib"
 
 Wall :: struct {
-    collider: Rectangle
+    collider: Collider
 }
 
 ParseRawWall :: proc(w: ^EntityRaw) -> Wall {

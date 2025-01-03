@@ -14,6 +14,7 @@ AnimatedTexture :: struct  {
     repeat: bool,
     texture: rl.Texture2D,
     source_dimensions: Vector2,
+    source_offset: Vector2,
     render_dimensions: Vector2,
     frames: i32, // number of frames
     current_frame: f32, // cutting of decimal point will give the frame index
@@ -25,6 +26,7 @@ NewAnimatedTexture :: proc(
     path: cstring,
     source_dimensions: Vector2,
     render_dimensions: Vector2,
+    source_offset: Vector2 = {0, 0},
     frames: i32 = 1,
     speed: f32 = 1,
     repeat: bool = true,
@@ -38,6 +40,7 @@ NewAnimatedTexture :: proc(
         flip = false,
         texture = texture,
         source_dimensions = source_dimensions,
+        source_offset = source_offset,
         render_dimensions = render_dimensions,
         frames = frames,
         current_frame = 0,
@@ -64,8 +67,8 @@ RenderTextureDefault :: proc(anim: ^AnimatedTexture, pos: Point2) {
 
     // Source
     src := rl.Rectangle {
-        x = math.floor(anim.current_frame)*frame_size,
-        y = 0,
+        x = math.floor(anim.current_frame)*frame_size + anim.source_offset.x,
+        y = anim.source_offset.y,
         width = frame_size,
         height = anim.source_dimensions[1]
     }

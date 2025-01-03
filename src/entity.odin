@@ -5,6 +5,13 @@ import "core:os"
 import "core:log"
 import "core:mem"
 
+import rl "vendor:raylib"
+
+Collider :: struct {
+    using rec: Rectangle,
+    disabled: bool,
+}
+
 EntityRaw :: struct {
     __identifier: string,
     px: Vector2,
@@ -30,7 +37,7 @@ DropArea :: struct {
 Entity :: struct {
     using pos: Point2,
     visible: bool,
-    collider: Rectangle,
+    collider: Collider,
 
     current_animation: ^AnimatedTexture,
 
@@ -50,6 +57,15 @@ Entity :: struct {
     }
 }
 
+DisableEntity :: proc(entity: ^Entity) {
+    entity.visible = false
+    entity.collider.disabled = true
+}
+
+EnableEntity :: proc(entity: ^Entity) {
+    entity.visible = true
+    entity.collider.disabled = false
+}
 
 // Use when no action is assigned
 UseItemEmpty :: proc(g_ctx: ^GameContext, entity: ^Entity, item: ^Item) -> bool {

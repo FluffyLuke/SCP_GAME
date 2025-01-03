@@ -46,22 +46,27 @@ Point2Distance :: proc(p1: Point2, p2: Point2) -> f32 {
     return rl.Vector2Distance(PointToRetardedVector(p1), PointToRetardedVector(p2))
 }
 
-CheckCollisionWithPoint :: proc(c: Rectangle, p: Point2) -> bool {
+CheckCollisionWithPoint :: proc(c: Collider, p: Point2) -> bool {
     return rl.CheckCollisionRecs(c, {p.x, p.y, 0.001, 0.001})
 }
 
-CheckCollisionWithVector2 :: proc(c: Rectangle, v: Vector2) -> bool {
+CheckCollisionWithVector2 :: proc(c: Collider, v: Vector2) -> bool {
     return rl.CheckCollisionRecs(c, {v.x, v.y, 0.001, 0.001})
 }
 
-CheckCollisionWithRecangle  :: proc(c1: Rectangle, c2: Rectangle) -> bool {
+CheckCollisionWithCollider  :: proc(c1: Collider, c2: Collider) -> bool {
     return rl.CheckCollisionRecs(c1, c2)
 }
 
 CheckCollision :: proc{
     CheckCollisionWithPoint,
     CheckCollisionWithVector2,
-    CheckCollisionWithRecangle,
+    CheckCollisionWithCollider,
+}
+
+CenterCollider :: proc(c: ^Collider, point: Point2) {
+    vec := PointToVector(point, { c.width, c.height } )
+    c^ = CreateCollider({ vec.x, vec.y, c.width, c.height })
 }
 
 RuneToString :: proc(r: rune) -> string {

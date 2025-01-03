@@ -27,7 +27,7 @@ GameContext :: struct {
     default_tile_height: i32,
 
     levels: [dynamic]^Level,
-    dialogs: [dynamic]Dialog,
+    dialogues: [dynamic]Dialogue,
     current_level: ^Level,
 
     player_starting_pos: Point2,
@@ -40,8 +40,6 @@ Item :: struct {
     data: any,
 }
 
-ItemPositionCollected :: Point2 { -500, -500 }
-ItemEmptyCollider :: Rectangle {0, 0, 0, 0}
 
 ItemParseData :: struct {
     default_texture_path: string,
@@ -50,6 +48,7 @@ ItemParseData :: struct {
     repeat: bool,
 
     source_dimensions: Vector2,
+    source_dimensions_offset: Vector2,
     render_dimensions: Vector2,
 } 
 
@@ -82,6 +81,7 @@ ParseRawItem :: proc(g_ctx: ^GameContext, p: ^EntityRaw) -> EntityInstance(Item)
                 texture_path_c,
                 data.source_dimensions,
                 data.render_dimensions,
+                {0,0},
                 data.frames,
                 data.speed,
                 data.repeat,
@@ -100,7 +100,7 @@ Tilesets :: enum {
 
 GetTilesets :: proc(g_ctx: ^GameContext) {
 
-    room_tileset_path: cstring = "./assets/tilesets/room.png"
+    room_tileset_path: cstring = "./assets/tilesets/levels.png"
 
     door_tileset := new(rl.Texture2D)
     door_tileset^ = rl.LoadTexture(room_tileset_path)
