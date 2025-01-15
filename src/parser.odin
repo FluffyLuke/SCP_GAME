@@ -77,10 +77,6 @@ ProcessLevels :: proc(g_ctx: ^GameContext, levelJSON: ^LevelJSON) {
         for &layer in level_raw.layerInstances {
             switch layer.__identifier {
                 case "Tiles": {
-                    log.error("PARSING TILES!")
-                    for &t in layer.gridTiles {
-                        log.error(t)
-                    }
                     ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Decorations)
                 }
                 case "Room": {
