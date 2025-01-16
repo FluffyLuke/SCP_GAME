@@ -10,9 +10,10 @@ Tile :: struct {
 }
 
 TileLayerMask :: enum {
-    Background = 0,
-    Decorations = 1,
-    Foreground = 2,
+    Room = 0,
+    Background = 1,
+    Decorations = 2,
+    Foreground = 3,
 }
 
 ParseTiles :: proc(g_ctx: ^GameContext, level: ^Level, tile_layer: ^[]AutoLayerTile, tileset: ^rl.Texture2D, mask: TileLayerMask) {

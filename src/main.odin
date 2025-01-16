@@ -143,21 +143,21 @@ MoveCamera :: proc(g_ctx: ^GameContext) {
 }
 
 Render :: proc(g_ctx: ^GameContext) {
-    for set in g_ctx.current_level.tiles {
+    for set, layer in g_ctx.current_level.tiles {
         for &t in set {
             rl.DrawTexturePro(t.texture^, t.src, t.dest, 0, 0, rl.WHITE)
         }
-    }
 
-    for e in g_ctx.current_level.entities {
-        if !e.visible {
-            continue
+        //TODO make better rendering for player (add layer for player)
+        if TileLayerMask(layer) == .Decorations && g_ctx.player.visible {
+            for e in g_ctx.current_level.entities {
+                if !e.visible {
+                    continue
+                }
+                e.render(g_ctx, e)
+            }
+            RenderPlayer(g_ctx)
         }
-        e.render(g_ctx, e)
-    }
-
-    if g_ctx.player.visible {
-        RenderPlayer(g_ctx)
     }
 
     if g_ctx.debug {

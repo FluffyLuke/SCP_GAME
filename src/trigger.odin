@@ -1,3 +1,5 @@
+#+feature dynamic-literals
+
 package game
 
 import "core:mem"
@@ -13,7 +15,7 @@ TriggerArea :: struct {
 }
 
 AssignProcToTriggerAreas :: proc(areas: ^[]TriggerArea) {
-    list_of_procs: map[string]proc(^GameContext) = {
+    list_of_procs := map[string]proc(^GameContext) {
         "InitGame" = InitGame
     }
     

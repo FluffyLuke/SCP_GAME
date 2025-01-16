@@ -19,7 +19,7 @@ Level :: struct {
     name: string,
     state: LevelState,
     
-    tiles: [3][dynamic]Tile,
+    tiles: [4][dynamic]Tile,
     walls: [dynamic]Wall,
 
     entities: [dynamic]^Entity,

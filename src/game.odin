@@ -1,3 +1,5 @@
+#+feature dynamic-literals
+
 package game
 
 import "core:mem"

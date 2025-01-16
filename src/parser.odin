@@ -74,23 +74,16 @@ ProcessLevels :: proc(g_ctx: ^GameContext, levelJSON: ^LevelJSON) {
 
             dimensions = { f32(level_raw.pxWid), f32(level_raw.pxHei) }
         }
+        
         for &layer in level_raw.layerInstances {
             switch layer.__identifier {
-                case "Tiles": {
-                    ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Decorations)
-                }
-                case "Room": {
-                    ParseTiles(g_ctx, level, &layer.autoLayerTiles, g_ctx.tilesets[.RoomTileset], .Background)
-                }
-                case "Entities": {
-                    ParseEntities(g_ctx, level, layer.entityInstances)
-                }
-                case "MetaEntities": {
-                    ParseEntities(g_ctx, level, layer.entityInstances)
-                }
-                case: {
-                    log.warn("Unrecognized layer: ", layer.__identifier)
-                }
+                case "Foreground": ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Foreground)
+                case "Background": ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Background)
+                case "Tiles": ParseTiles(g_ctx, level, &layer.gridTiles, g_ctx.tilesets[.RoomTileset], .Room)
+                case "Room": ParseTiles(g_ctx, level, &layer.autoLayerTiles, g_ctx.tilesets[.RoomTileset], .Room)
+                case "Entities": ParseEntities(g_ctx, level, layer.entityInstances)
+                case "MetaEntities": ParseEntities(g_ctx, level, layer.entityInstances)
+                case: log.warn("Unrecognized layer: ", layer.__identifier)
             }
         }
         BindLevelData(level)
